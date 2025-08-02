@@ -5,7 +5,7 @@
 #include "main.h"
 
 /* choose a Hardware SPI port to use. */
-#define ST7789_SPI_PORT hspi1
+#define ST7789_SPI_PORT hspi2
 extern SPI_HandleTypeDef ST7789_SPI_PORT;
 
 /* choose whether use DMA or not */
@@ -15,14 +15,21 @@ extern SPI_HandleTypeDef ST7789_SPI_PORT;
 //#define CFG_NO_CS
 
 /* Pin connection*/
-#define ST7789_RST_PORT ST7789_RST_GPIO_Port
-#define ST7789_RST_PIN  ST7789_RST_Pin
-#define ST7789_DC_PORT  ST7789_DC_GPIO_Port
-#define ST7789_DC_PIN   ST7789_DC_Pin
+//#define ST7789_RST_PORT ST7789_RST_GPIO_Port
+//#define ST7789_RST_PIN  ST7789_RST_Pin
+//#define ST7789_DC_PORT  ST7789_DC_GPIO_Port
+//#define ST7789_DC_PIN   ST7789_DC_Pin
+
+#define ST7789_RST_PORT LCD_RST_GPIO_Port
+#define ST7789_RST_PIN  LCD_RST_Pin
+#define ST7789_DC_PORT  LCD_DC_GPIO_Port
+#define ST7789_DC_PIN   LCD_DC_Pin
 
 #ifndef CFG_NO_CS
-#define ST7789_CS_PORT  ST7789_CS_GPIO_Port
-#define ST7789_CS_PIN   ST7789_CS_Pin
+//#define ST7789_CS_PORT  ST7789_CS_GPIO_Port
+//#define ST7789_CS_PIN   ST7789_CS_Pin
+#define ST7789_CS_PORT  LCD_CS_GPIO_Port
+#define ST7789_CS_PIN   LCD_CS_Pin
 #endif
 
 /* If u need Backlight control, uncomment below */
