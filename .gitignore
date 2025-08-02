@@ -1,0 +1,28 @@
+# Ignore build output and temporary files
+/Debug/
+*.o
+*.d
+*.elf
+*.hex
+*.bin
+*.map
+*.lst
+
+# STM32CubeIDE metadata
+.cproject
+.project
+.mxproject
+.settings/
+
+.DS_Store
+Thumbs.db
+
+*~
+*.swp
+*.bak
+
+
+*.launch
+/Drivers/
+/Core/Startup
+*.ld
