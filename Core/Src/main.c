@@ -99,8 +99,16 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  ST7789_Init();
+  ST7789_Test();
+
+  uint8_t test = 0xAA;
+  HAL_SPI_Transmit(&hspi2, &test, 1, HAL_MAX_DELAY);
+
+
   while (1)
   {
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
