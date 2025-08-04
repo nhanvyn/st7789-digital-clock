@@ -18,7 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
+#include "frames.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "st7789.h"
@@ -103,10 +103,15 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   ST7789_Init();
-  ST7789_Test();
+  HAL_Delay(1000);
+  ST7789_Fill_Color(WHITE);
+  HAL_Delay(2000);
+  ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, (uint16_t *)frame0);
 
-  uint8_t test = 0xAA;
-  HAL_SPI_Transmit(&hspi2, &test, 1, HAL_MAX_DELAY);
+
+//  uint8_t test = 0xAA;
+//  HAL_SPI_Transmit(&hspi2, &test, 1, HAL_MAX_DELAY);
+
 
 
   while (1)

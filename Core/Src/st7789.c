@@ -31,12 +31,53 @@ static void ST7789_WriteCommand(uint8_t cmd)
  * @param buff_size -> size of the data buffer
  * @return none
  */
+static void ST7789_Write_Big_Endian_Data(uint8_t *buff, size_t buff_size)
+{
+	ST7789_Select();
+	ST7789_DC_Set();
+	// reverse each 2 bytes to match big endian format
+
+	uint8_t big_endian_buf[buff_size];
+
+
+	for (uint16_t i = 0; i < ST7789_WIDTH*ST7789_HEIGHT; i++){
+		big_endian_buf[2*i] = buff[2*i+1];
+		big_endian_buf[2*i+1] = buff[2*i];
+	}
+
+	uint8_t *ptr = big_endian_buf;
+
+	// split data in small chunks because HAL can't send more than 64K at once
+
+	while (buff_size > 0) {
+		uint16_t chunk_size = buff_size > 65535 ? 65535 : buff_size;
+		#ifdef USE_DMA
+			if (DMA_MIN_SIZE <= buff_size)
+			{
+				HAL_SPI_Transmit_DMA(&ST7789_SPI_PORT, ptr, chunk_size);
+				while (ST7789_SPI_PORT.hdmatx->State != HAL_DMA_STATE_READY)
+				{}
+			}
+			else
+				HAL_SPI_Transmit(&ST7789_SPI_PORT, ptr, chunk_size, HAL_MAX_DELAY);
+		#else
+			HAL_SPI_Transmit(&ST7789_SPI_PORT, ptr, chunk_size, HAL_MAX_DELAY);
+		#endif
+		ptr += chunk_size;
+		buff_size -= chunk_size;
+	}
+
+	ST7789_UnSelect();
+}
+
+
 static void ST7789_WriteData(uint8_t *buff, size_t buff_size)
 {
 	ST7789_Select();
 	ST7789_DC_Set();
 
 	// split data in small chunks because HAL can't send more than 64K at once
+	// A 240x240 image will have 240x240x2 = 115200 bytes
 
 	while (buff_size > 0) {
 		uint16_t chunk_size = buff_size > 65535 ? 65535 : buff_size;
@@ -417,6 +458,22 @@ void ST7789_DrawImage(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint
 	ST7789_WriteData((uint8_t *)data, sizeof(uint16_t) * w * h);
 	ST7789_UnSelect();
 }
+
+void ST7789_Draw_Big_Endian_Image(uint16_t x, uint16_t y, uint16_t w, uint16_t h, const uint16_t *data)
+{
+	if ((x >= ST7789_WIDTH) || (y >= ST7789_HEIGHT))
+		return;
+	if ((x + w - 1) >= ST7789_WIDTH)
+		return;
+	if ((y + h - 1) >= ST7789_HEIGHT)
+		return;
+
+	ST7789_Select();
+	ST7789_SetAddressWindow(x, y, x + w - 1, y + h - 1);
+	ST7789_Write_Big_Endian_Data((uint8_t *)data, sizeof(uint16_t) * w * h);
+	ST7789_UnSelect();
+}
+
 
 /**
  * @brief Invert Fullscreen color
