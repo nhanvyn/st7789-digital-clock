@@ -179,7 +179,7 @@ void ST7789_Init(void)
 	#endif
 	HAL_Delay(10);
     ST7789_RST_Clr();
-    HAL_Delay(200);
+    HAL_Delay(1000);
     ST7789_RST_Set();
     HAL_Delay(200);
 
