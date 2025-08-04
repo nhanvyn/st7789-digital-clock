@@ -106,20 +106,21 @@ int main(void)
   HAL_Delay(1000);
   ST7789_Fill_Color(WHITE);
   HAL_Delay(2000);
-  ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, (uint16_t *)frame0);
-
-
-//  uint8_t test = 0xAA;
-//  HAL_SPI_Transmit(&hspi2, &test, 1, HAL_MAX_DELAY);
+//  ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, (uint16_t *)frame0);
+  const uint16_t* animation[] = {
+	frame0, frame3, frame6, frame9
+  };
 
 
 
   while (1)
   {
+	 for (uint8_t i = 0; i < 3; i++)
+	 {
+		 ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, animation[i]);
+		 HAL_Delay(100);
+	 }
 
-    /* USER CODE END WHILE */
-
-    /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
