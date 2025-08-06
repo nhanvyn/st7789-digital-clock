@@ -104,7 +104,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   ST7789_Init();
   HAL_Delay(1000);
-  ST7789_Fill_Color(WHITE);
+  ST7789_Fill_Color(BLACK);
   HAL_Delay(2000);
 //  ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, (uint16_t *)frame0);
   const uint16_t* animation[] = {
