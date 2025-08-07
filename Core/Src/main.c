@@ -22,6 +22,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "st7789.h"
+#include "frame_mod.h"
+#include "string.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,6 +46,7 @@ SPI_HandleTypeDef hspi2;
 DMA_HandleTypeDef hdma_spi2_tx;
 
 UART_HandleTypeDef huart2;
+uint16_t cpy[FRAME_PIXELS];
 
 /* USER CODE BEGIN PV */
 
@@ -103,23 +106,28 @@ int main(void)
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   ST7789_Init();
-  HAL_Delay(1000);
+  HAL_Delay(500);
   ST7789_Fill_Color(BLACK);
-  HAL_Delay(2000);
+  HAL_Delay(500);
 //  ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, (uint16_t *)frame0);
   const uint16_t* animation[] = {
-	frame0, frame3, frame6, frame9
+	frame3, frame6
   };
 
 
 
   while (1)
   {
-	 for (uint8_t i = 0; i < 3; i++)
+	 for (uint8_t i = 0; i < 2; i++)
 	 {
-		 ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, animation[i]);
+
+		 memcpy(cpy, animation[i], FRAME_PIXELS*sizeof(uint16_t));
+		 Buffer_WriteString(10,50, "Hello World!", cpy, Font_7x10 ,RED, WHITE);
+		 ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, cpy);
 		 HAL_Delay(100);
 	 }
+
+
 
   }
   /* USER CODE END 3 */

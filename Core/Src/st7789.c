@@ -8,7 +8,7 @@ uint16_t DMA_MIN_SIZE = 16;
  * And if your MCU have enough RAM(even larger than full-frame size),
  * Then you can specify the framebuffer size to the full resolution below.
  */
- #define HOR_LEN 	5	//	Also mind the resolution of your screen!
+#define HOR_LEN 	5	//	Also mind the resolution of your screen!
 uint16_t disp_buf[ST7789_WIDTH * HOR_LEN];
 #endif
 
@@ -37,15 +37,21 @@ static void ST7789_Write_Big_Endian_Data(uint8_t *buff, size_t buff_size)
 	ST7789_DC_Set();
 	// reverse each 2 bytes to match big endian format
 
-	uint8_t big_endian_buf[buff_size];
+//	uint8_t big_endian_buf[buff_size];
 
 
-	for (uint16_t i = 0; i < ST7789_WIDTH*ST7789_HEIGHT; i++){
-		big_endian_buf[2*i] = buff[2*i+1];
-		big_endian_buf[2*i+1] = buff[2*i];
+//	for (uint16_t i = 0; i < ST7789_WIDTH*ST7789_HEIGHT; i++){
+//		big_endian_buf[2*i] = buff[2*i+1];
+//		big_endian_buf[2*i+1] = buff[2*i];
+//	}
+
+	for (uint16_t i = 0; i < ST7789_WIDTH * ST7789_HEIGHT; i++) {
+	    uint8_t temp = buff[i * 2];
+	    buff[i * 2] = buff[i * 2 + 1];
+	    buff[i * 2 + 1] = temp;
 	}
 
-	uint8_t *ptr = big_endian_buf;
+//	uint8_t *ptr = big_endian_buf;
 
 	// split data in small chunks because HAL can't send more than 64K at once
 
@@ -54,16 +60,16 @@ static void ST7789_Write_Big_Endian_Data(uint8_t *buff, size_t buff_size)
 		#ifdef USE_DMA
 			if (DMA_MIN_SIZE <= buff_size)
 			{
-				HAL_SPI_Transmit_DMA(&ST7789_SPI_PORT, ptr, chunk_size);
+				HAL_SPI_Transmit_DMA(&ST7789_SPI_PORT, buff, chunk_size);
 				while (ST7789_SPI_PORT.hdmatx->State != HAL_DMA_STATE_READY)
 				{}
 			}
 			else
-				HAL_SPI_Transmit(&ST7789_SPI_PORT, ptr, chunk_size, HAL_MAX_DELAY);
+				HAL_SPI_Transmit(&ST7789_SPI_PORT, buff, chunk_size, HAL_MAX_DELAY);
 		#else
-			HAL_SPI_Transmit(&ST7789_SPI_PORT, ptr, chunk_size, HAL_MAX_DELAY);
+			HAL_SPI_Transmit(&ST7789_SPI_PORT, buff, chunk_size, HAL_MAX_DELAY);
 		#endif
-		ptr += chunk_size;
+		buff += chunk_size;
 		buff_size -= chunk_size;
 	}
 
@@ -179,9 +185,9 @@ void ST7789_Init(void)
 	#endif
 	HAL_Delay(10);
     ST7789_RST_Clr();
-    HAL_Delay(1000);
+    HAL_Delay(500);
     ST7789_RST_Set();
-    HAL_Delay(200);
+    HAL_Delay(500);
 
     ST7789_WriteCommand(ST7789_COLMOD);		//	Set color mode
     ST7789_WriteSmallData(ST7789_COLOR_MODE_16bit);
@@ -226,11 +232,8 @@ void ST7789_Init(void)
     ST7789_WriteCommand (ST7789_INVON);		//	Inversion ON
 	ST7789_WriteCommand (ST7789_SLPOUT);	//	Out of sleep mode
   	ST7789_WriteCommand (ST7789_NORON);		//	Normal Display on
-  	ST7789_Fill_Color(GREEN);
   	ST7789_WriteCommand (ST7789_DISPON);	//	Main screen turned on	
-
 	HAL_Delay(50);
-	ST7789_Fill_Color(BLUE);
 	ST7789_Fill_Color(BLACK);				//	Fill with Black.
 }
 
