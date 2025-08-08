@@ -27,7 +27,9 @@ void Buffer_WriteChar(uint16_t x, uint16_t y, char ch,  uint16_t* buffer, FontDe
 				buffer[(y + i) * FRAME_WIDTH + (x + j)] = color;
 			}
 			else {
-				buffer[(y + i) * FRAME_WIDTH + (x + j)] = bgcolor;
+				if (bgcolor != NO_COLOR){
+					buffer[(y + i) * FRAME_WIDTH + (x + j)] = bgcolor;
+				}
 			}
 		}
 	}

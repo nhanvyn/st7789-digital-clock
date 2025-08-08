@@ -167,6 +167,8 @@ extern SPI_HandleTypeDef ST7789_SPI_PORT;
 #define LGRAY       0XC618
 #define LGRAYBLUE   0XA651
 #define LBBLUE      0X2B12
+#define NO_COLOR 0xDEAD
+
 
 /* Control Registers and constant codes */
 #define ST7789_NOP     0x00
