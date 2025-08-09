@@ -24,6 +24,8 @@
 #include "st7789.h"
 #include "frame_mod.h"
 #include "string.h"
+#include "frames.h"
+#include "stdio.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -61,12 +63,14 @@ static void MX_USART2_UART_Init(void);
 static void MX_SPI2_Init(void);
 static void MX_RTC_Init(void);
 /* USER CODE BEGIN PFP */
-
+static void RTC_SetToBuildTime(void);
+static int month_from_str(const char *m);
+static const char* month_to_str(uint8_t month);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
+uint16_t cpy[FRAME_PIXELS];
 /* USER CODE END 0 */
 
 /**
@@ -103,13 +107,47 @@ int main(void)
   MX_SPI2_Init();
   MX_RTC_Init();
   /* USER CODE BEGIN 2 */
+  RTC_SetToBuildTime();
+  ST7789_Init();
+  HAL_Delay(500);
+  ST7789_Fill_Color(BLACK);
+  HAL_Delay(500);
+  const uint16_t* animation[] = {
+  	frame3, frame6
+  };
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+
+  RTC_TimeTypeDef t; RTC_DateTypeDef d;
+  char dateBF[30];
+  char timeBF[30];
+  uint32_t last = HAL_GetTick();
   while (1)
   {
+	  for (uint8_t i = 0; i < 2; i++)
+	  	 {
+		  	 if (HAL_GetTick() - last >= 1000)
+		  	 {
+		  		last += 1000;
+		  		HAL_RTC_GetTime(&hrtc, &t, RTC_FORMAT_BIN);
+		  		HAL_RTC_GetDate(&hrtc, &d, RTC_FORMAT_BIN);
+		  		// Format time and date
+		  		snprintf(timeBF, sizeof(timeBF), "%02u:%02u:%02u AM", t.Hours, t.Minutes, t.Seconds);
+		  		snprintf(dateBF, sizeof(dateBF), "%02u %.3s %02u", d.Date, month_to_str(d.Month), d.Year+2000);
+		  		HAL_UART_Transmit(&huart2, (uint8_t*)dateBF, strlen(dateBF), HAL_MAX_DELAY);
+
+		  	 }
+
+	  		 memcpy(cpy, animation[i], FRAME_PIXELS*sizeof(uint16_t));
+	  		 Buffer_WriteString(5,15, "Monday 26~C", cpy,  Font_11x18, WHITE, BLACK);
+	  		 Buffer_WriteString(5,34, timeBF, cpy,  Font_11x18 ,WHITE, BLACK);
+	  		 Buffer_WriteString(5,52, dateBF, cpy,  Font_7x10 ,WHITE, BLACK);
+	  		 ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, cpy);
+	  		 HAL_Delay(100);
+		 }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -252,7 +290,7 @@ static void MX_SPI2_Init(void)
   hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -356,7 +394,61 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static const char* month_to_str(uint8_t month) {
+    // month: 1 = Jan, 12 = Dec
+    static const char *names = "JanFebMarAprMayJunJulAugSepOctNovDec";
+    if (month >= 1 && month <= 12) {
+        return names + (month - 1) * 3;
+    }
+    return "???";
+}
 
+static int month_from_str(const char *date) {
+	// date points to "__DATE__", e.g. "Aug  8 2025"
+    static const char *names = "JanFebMarAprMayJunJulAugSepOctNovDec";
+    for (uint8_t i = 0; i < 12; i++){
+    	if (strncmp(date, names + 3*i, 3) == 0){
+    		return i+1;
+    	}
+    }
+    return 1;
+}
+
+static void RTC_SetToBuildTime(void) {
+    RTC_TimeTypeDef t = {0};
+    RTC_DateTypeDef d = {0};
+
+    // __TIME__ = "hh:mm:ss"
+    // __DATE__ = "Mmm dd yyyy" e.g: Aug  8 2025
+
+    const char *TIME = __TIME__;
+    const char *DATE = __DATE__;
+
+    // Parse time
+    t.Hours   = (TIME[0]-'0')*10 + (TIME[1]-'0');
+    t.Minutes = (TIME[3]-'0')*10 + (TIME[4]-'0');
+    t.Seconds = (TIME[6]-'0')*10 + (TIME[7]-'0');
+
+    // Parse month
+    int month = month_from_str(DATE);
+
+    // Parse day (DATE[4] might be space for 1–9)
+    int day_tens = (DATE[4] == ' ') ? 0 : (DATE[4]-'0');
+    int day_ones = (DATE[5]-'0');
+    int day = day_tens*10 + day_ones;
+
+    // Parse year
+    int year = (DATE[7]-'0')*1000 + (DATE[8]-'0')*100 + (DATE[9]-'0')*10 + (DATE[10]-'0');
+
+    d.WeekDay = RTC_WEEKDAY_MONDAY; // ignored by HAL when setting
+    d.Month   = month;
+    d.Date    = day;
+    d.Year    = (uint8_t)(year - 2000); // HAL wants 0–99, no register space for century
+
+    // HAL expects BCD mode by default, have to covert it to binary
+    HAL_RTC_SetTime(&hrtc, &t, RTC_FORMAT_BIN);
+    HAL_RTC_SetDate(&hrtc, &d, RTC_FORMAT_BIN);
+}
 /* USER CODE END 4 */
 
 /**
