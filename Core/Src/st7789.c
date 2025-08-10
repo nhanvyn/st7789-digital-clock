@@ -26,7 +26,7 @@ static void ST7789_WriteCommand(uint8_t cmd)
 }
 
 /**
- * @brief Write data to ST7789 controller
+ * @brief Write data that comply big endian format to ST7789 controller
  * @param buff -> pointer of data buffer
  * @param buff_size -> size of the data buffer
  * @return none
@@ -76,7 +76,12 @@ static void ST7789_Write_Big_Endian_Data(uint8_t *buff, size_t buff_size)
 	ST7789_UnSelect();
 }
 
-
+/**
+ * @brief Write data to ST7789 controller
+ * @param buff -> pointer of data buffer
+ * @param buff_size -> size of the data buffer
+ * @return none
+ */
 static void ST7789_WriteData(uint8_t *buff, size_t buff_size)
 {
 	ST7789_Select();

@@ -64,8 +64,11 @@ static void MX_SPI2_Init(void);
 static void MX_RTC_Init(void);
 /* USER CODE BEGIN PFP */
 static void RTC_SetToBuildTime(void);
-static int month_from_str(const char *m);
+static uint8_t month_from_str(const char *m);
 static const char* month_to_str(uint8_t month);
+static const char* weekday_to_str(uint8_t weekday);
+static uint8_t weekday_from_ymd(int year, int month, int day) ;
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -110,11 +113,13 @@ int main(void)
   RTC_SetToBuildTime();
   ST7789_Init();
   HAL_Delay(500);
-  ST7789_Fill_Color(BLACK);
-  HAL_Delay(500);
   const uint16_t* animation[] = {
   	frame3, frame6
   };
+
+//  ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, frame3);
+  HAL_Delay(1000);
+//  ST7789_DrawImage(0, 0, 128, 128, (uint16_t *)saber);
 
   /* USER CODE END 2 */
 
@@ -122,8 +127,9 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 
   RTC_TimeTypeDef t; RTC_DateTypeDef d;
-  char dateBF[30];
-  char timeBF[30];
+  char dateBF[20];
+  char timeBF[20];
+  char weekdayTemp[20];
   uint32_t last = HAL_GetTick();
   while (1)
   {
@@ -137,12 +143,12 @@ int main(void)
 		  		// Format time and date
 		  		snprintf(timeBF, sizeof(timeBF), "%02u:%02u:%02u AM", t.Hours, t.Minutes, t.Seconds);
 		  		snprintf(dateBF, sizeof(dateBF), "%02u %.3s %02u", d.Date, month_to_str(d.Month), d.Year+2000);
-		  		HAL_UART_Transmit(&huart2, (uint8_t*)dateBF, strlen(dateBF), HAL_MAX_DELAY);
+		  		snprintf(weekdayTemp, sizeof(weekdayTemp), "%s 26~C", weekday_to_str(d.WeekDay));
 
 		  	 }
 
 	  		 memcpy(cpy, animation[i], FRAME_PIXELS*sizeof(uint16_t));
-	  		 Buffer_WriteString(5,15, "Monday 26~C", cpy,  Font_11x18, WHITE, BLACK);
+	  		 Buffer_WriteString(5, 15, weekdayTemp, cpy, Font_11x18, WHITE, BLACK);
 	  		 Buffer_WriteString(5,34, timeBF, cpy,  Font_11x18 ,WHITE, BLACK);
 	  		 Buffer_WriteString(5,52, dateBF, cpy,  Font_7x10 ,WHITE, BLACK);
 	  		 ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, cpy);
@@ -290,7 +296,7 @@ static void MX_SPI2_Init(void)
   hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -394,6 +400,24 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static uint8_t weekday_from_ymd(int year, int month, int day) {
+    static const uint8_t t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
+    if (month < 3) year -= 1;
+    uint8_t w = (year + year/4 - year/100 + year/400 + t[month-1] + day) % 7;
+    return (w == 0) ? 7 : w; // 1=Mon, 7=Sun (STM32 HAL convention)
+}
+
+static const char* weekday_to_str(uint8_t weekday) {
+    // 1 = Monday, 7 = Sunday
+    static const char *names[] = {
+        "???", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
+    };
+    if (weekday >= 1 && weekday <= 7) {
+        return names[weekday];
+    }
+    return "???";
+}
+
 static const char* month_to_str(uint8_t month) {
     // month: 1 = Jan, 12 = Dec
     static const char *names = "JanFebMarAprMayJunJulAugSepOctNovDec";
@@ -403,7 +427,7 @@ static const char* month_to_str(uint8_t month) {
     return "???";
 }
 
-static int month_from_str(const char *date) {
+static uint8_t month_from_str(const char *date) {
 	// date points to "__DATE__", e.g. "Aug  8 2025"
     static const char *names = "JanFebMarAprMayJunJulAugSepOctNovDec";
     for (uint8_t i = 0; i < 12; i++){
@@ -440,10 +464,10 @@ static void RTC_SetToBuildTime(void) {
     // Parse year
     int year = (DATE[7]-'0')*1000 + (DATE[8]-'0')*100 + (DATE[9]-'0')*10 + (DATE[10]-'0');
 
-    d.WeekDay = RTC_WEEKDAY_MONDAY; // ignored by HAL when setting
     d.Month   = month;
     d.Date    = day;
     d.Year    = (uint8_t)(year - 2000); // HAL wants 0–99, no register space for century
+    d.WeekDay = weekday_from_ymd(year, month, day);
 
     // HAL expects BCD mode by default, have to covert it to binary
     HAL_RTC_SetTime(&hrtc, &t, RTC_FORMAT_BIN);
