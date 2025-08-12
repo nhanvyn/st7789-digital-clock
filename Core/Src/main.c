@@ -21,11 +21,12 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <string.h>
+#include <stdio.h>
 #include "st7789.h"
 #include "frame_mod.h"
-#include "string.h"
 #include "frames.h"
-#include "stdio.h"
+#include "bme280.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -115,15 +116,16 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   RTC_SetToBuildTime();
+  BME280_Config(&hi2c1);
+  Calib_Data_Read(&hi2c1);
   ST7789_Init();
   HAL_Delay(500);
-  const uint16_t* animation[] = {
-  	frame3, frame6
-  };
+  const uint16_t* animation[] = { frame3, frame6 };
 
 //  ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, frame3);
 //  HAL_Delay(1000);
 //  ST7789_DrawImage(0, 0, 128, 128, (uint16_t *)saber);
+
 
   /* USER CODE END 2 */
 
@@ -133,30 +135,55 @@ int main(void)
   RTC_TimeTypeDef t; RTC_DateTypeDef d;
   char dateBF[20];
   char timeBF[20];
-  char weekdayTemp[20];
+  char weekdayTemp[24];
+  int32_t celcius_x100 = 0;
+  int32_t rawTemp = 0;
   uint32_t last = HAL_GetTick();
+
   while (1)
   {
 	  for (uint8_t i = 0; i < 2; i++)
 	  	 {
-		  	 if (HAL_GetTick() - last >= 1000)
-		  	 {
-		  		last += 1000;
-		  		HAL_RTC_GetTime(&hrtc, &t, RTC_FORMAT_BIN);
-		  		HAL_RTC_GetDate(&hrtc, &d, RTC_FORMAT_BIN);
-		  		// Format time and date
-		  		snprintf(timeBF, sizeof(timeBF), "%02u:%02u:%02u AM", t.Hours, t.Minutes, t.Seconds);
-		  		snprintf(dateBF, sizeof(dateBF), "%02u %.3s %02u", d.Date, month_to_str(d.Month), d.Year+2000);
-		  		snprintf(weekdayTemp, sizeof(weekdayTemp), "%s 26~C", weekday_to_str(d.WeekDay));
+			 rawTemp = BME280_ReadTemp(&hi2c1);
+			 celcius_x100 = BME280_compensate_T_int32(rawTemp);
 
-		  	 }
 
-	  		 memcpy(cpy, animation[i], FRAME_PIXELS*sizeof(uint16_t));
-	  		 Buffer_WriteString(5, 15, weekdayTemp, cpy, Font_11x18, WHITE, BLACK);
-	  		 Buffer_WriteString(5,34, timeBF, cpy,  Font_11x18 ,WHITE, BLACK);
-	  		 Buffer_WriteString(5,52, dateBF, cpy,  Font_7x10 ,WHITE, BLACK);
-	  		 ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, cpy);
-	  		 HAL_Delay(100);
+			 if (HAL_GetTick() - last >= 1000)
+			 {
+				last += 1000;
+				HAL_RTC_GetTime(&hrtc, &t, RTC_FORMAT_BIN);
+				HAL_RTC_GetDate(&hrtc, &d, RTC_FORMAT_BIN);
+
+
+				// Format time and date
+				snprintf(timeBF,
+						sizeof(timeBF),
+						"%02u:%02u:%02u AM",
+						t.Hours,
+						t.Minutes,
+						t.Seconds);
+
+				snprintf(dateBF,
+						sizeof(dateBF),
+						"%02u %.3s %02u",
+						d.Date,
+						month_to_str(d.Month),
+						d.Year+2000);
+
+				snprintf(weekdayTemp,
+						sizeof(weekdayTemp),
+						"%s %ld.%02d~C",
+						weekday_to_str(d.WeekDay),
+						celcius_x100 / 100,
+						abs(celcius_x100 % 100));
+			 }
+
+			 memcpy(cpy, animation[i], FRAME_PIXELS*sizeof(uint16_t));
+			 Buffer_WriteString(5, 15, weekdayTemp, cpy, Font_11x18, WHITE, BLACK);
+			 Buffer_WriteString(5,34, timeBF, cpy,  Font_11x18 ,WHITE, BLACK);
+			 Buffer_WriteString(5,53, dateBF, cpy,  Font_7x10 ,WHITE, BLACK);
+			 ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, cpy);
+			 HAL_Delay(100);
 		 }
     /* USER CODE END WHILE */
 
