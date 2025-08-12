@@ -1,7 +1,7 @@
 # ST7789 Digital Clock ⏰🌦
 
 
-<img src="docs/lcd.jpg" alt="Preview" width="300"/>
+<img src="docs/lcd.jpg" alt="Preview" width="390"/>
 
 
 An embedded digital clock built with **STM32** and an **ST7789 LCD display**.  

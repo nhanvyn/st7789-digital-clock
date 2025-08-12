@@ -37,21 +37,11 @@ static void ST7789_Write_Big_Endian_Data(uint8_t *buff, size_t buff_size)
 	ST7789_DC_Set();
 	// reverse each 2 bytes to match big endian format
 
-//	uint8_t big_endian_buf[buff_size];
-
-
-//	for (uint16_t i = 0; i < ST7789_WIDTH*ST7789_HEIGHT; i++){
-//		big_endian_buf[2*i] = buff[2*i+1];
-//		big_endian_buf[2*i+1] = buff[2*i];
-//	}
-
 	for (uint16_t i = 0; i < ST7789_WIDTH * ST7789_HEIGHT; i++) {
 	    uint8_t temp = buff[i * 2];
 	    buff[i * 2] = buff[i * 2 + 1];
 	    buff[i * 2 + 1] = temp;
 	}
-
-//	uint8_t *ptr = big_endian_buf;
 
 	// split data in small chunks because HAL can't send more than 64K at once
 
@@ -110,6 +100,7 @@ static void ST7789_WriteData(uint8_t *buff, size_t buff_size)
 
 	ST7789_UnSelect();
 }
+
 /**
  * @brief Write data to ST7789 controller, simplify for 8bit data.
  * data -> data to write
@@ -271,24 +262,6 @@ void ST7789_Fill_Color(uint16_t color)
 }
 
 /**
- * @brief Draw a Pixel
- * @param x&y -> coordinate to Draw
- * @param color -> color of the Pixel
- * @return none
- */
-void ST7789_DrawPixel(uint16_t x, uint16_t y, uint16_t color)
-{
-	if ((x < 0) || (x >= ST7789_WIDTH) ||
-		 (y < 0) || (y >= ST7789_HEIGHT))	return;
-	
-	ST7789_SetAddressWindow(x, y, x, y);
-	uint8_t data[] = {color >> 8, color & 0xFF};
-	ST7789_Select();
-	ST7789_WriteData(data, sizeof(data));
-	ST7789_UnSelect();
-}
-
-/**
  * @brief Fill an Area with single color
  * @param xSta&ySta -> coordinate of the start point
  * @param xEnd&yEnd -> coordinate of the end point
@@ -307,143 +280,6 @@ void ST7789_Fill(uint16_t xSta, uint16_t ySta, uint16_t xEnd, uint16_t yEnd, uin
 			uint8_t data[] = {color >> 8, color & 0xFF};
 			ST7789_WriteData(data, sizeof(data));
 		}
-	ST7789_UnSelect();
-}
-
-/**
- * @brief Draw a big Pixel at a point
- * @param x&y -> coordinate of the point
- * @param color -> color of the Pixel
- * @return none
- */
-void ST7789_DrawPixel_4px(uint16_t x, uint16_t y, uint16_t color)
-{
-	if ((x <= 0) || (x > ST7789_WIDTH) ||
-		 (y <= 0) || (y > ST7789_HEIGHT))	return;
-	ST7789_Select();
-	ST7789_Fill(x - 1, y - 1, x + 1, y + 1, color);
-	ST7789_UnSelect();
-}
-
-/**
- * @brief Draw a line with single color
- * @param x1&y1 -> coordinate of the start point
- * @param x2&y2 -> coordinate of the end point
- * @param color -> color of the line to Draw
- * @return none
- */
-void ST7789_DrawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1,
-        uint16_t color) {
-	uint16_t swap;
-    uint16_t steep = ABS(y1 - y0) > ABS(x1 - x0);
-    if (steep) {
-		swap = x0;
-		x0 = y0;
-		y0 = swap;
-
-		swap = x1;
-		x1 = y1;
-		y1 = swap;
-        //_swap_int16_t(x0, y0);
-        //_swap_int16_t(x1, y1);
-    }
-
-    if (x0 > x1) {
-		swap = x0;
-		x0 = x1;
-		x1 = swap;
-
-		swap = y0;
-		y0 = y1;
-		y1 = swap;
-        //_swap_int16_t(x0, x1);
-        //_swap_int16_t(y0, y1);
-    }
-
-    int16_t dx, dy;
-    dx = x1 - x0;
-    dy = ABS(y1 - y0);
-
-    int16_t err = dx / 2;
-    int16_t ystep;
-
-    if (y0 < y1) {
-        ystep = 1;
-    } else {
-        ystep = -1;
-    }
-
-    for (; x0<=x1; x0++) {
-        if (steep) {
-            ST7789_DrawPixel(y0, x0, color);
-        } else {
-            ST7789_DrawPixel(x0, y0, color);
-        }
-        err -= dy;
-        if (err < 0) {
-            y0 += ystep;
-            err += dx;
-        }
-    }
-}
-
-/**
- * @brief Draw a Rectangle with single color
- * @param xi&yi -> 2 coordinates of 2 top points.
- * @param color -> color of the Rectangle line
- * @return none
- */
-void ST7789_DrawRectangle(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t color)
-{
-	ST7789_Select();
-	ST7789_DrawLine(x1, y1, x2, y1, color);
-	ST7789_DrawLine(x1, y1, x1, y2, color);
-	ST7789_DrawLine(x1, y2, x2, y2, color);
-	ST7789_DrawLine(x2, y1, x2, y2, color);
-	ST7789_UnSelect();
-}
-
-/** 
- * @brief Draw a circle with single color
- * @param x0&y0 -> coordinate of circle center
- * @param r -> radius of circle
- * @param color -> color of circle line
- * @return  none
- */
-void ST7789_DrawCircle(uint16_t x0, uint16_t y0, uint8_t r, uint16_t color)
-{
-	int16_t f = 1 - r;
-	int16_t ddF_x = 1;
-	int16_t ddF_y = -2 * r;
-	int16_t x = 0;
-	int16_t y = r;
-
-	ST7789_Select();
-	ST7789_DrawPixel(x0, y0 + r, color);
-	ST7789_DrawPixel(x0, y0 - r, color);
-	ST7789_DrawPixel(x0 + r, y0, color);
-	ST7789_DrawPixel(x0 - r, y0, color);
-
-	while (x < y) {
-		if (f >= 0) {
-			y--;
-			ddF_y += 2;
-			f += ddF_y;
-		}
-		x++;
-		ddF_x += 2;
-		f += ddF_x;
-
-		ST7789_DrawPixel(x0 + x, y0 + y, color);
-		ST7789_DrawPixel(x0 - x, y0 + y, color);
-		ST7789_DrawPixel(x0 + x, y0 - y, color);
-		ST7789_DrawPixel(x0 - x, y0 - y, color);
-
-		ST7789_DrawPixel(x0 + y, y0 + x, color);
-		ST7789_DrawPixel(x0 - y, y0 + x, color);
-		ST7789_DrawPixel(x0 + y, y0 - x, color);
-		ST7789_DrawPixel(x0 - y, y0 - x, color);
-	}
 	ST7789_UnSelect();
 }
 
@@ -481,19 +317,6 @@ void ST7789_Draw_Big_Endian_Image(uint16_t x, uint16_t y, uint16_t w, uint16_t h
 	ST7789_Select();
 	ST7789_SetAddressWindow(x, y, x + w - 1, y + h - 1);
 	ST7789_Write_Big_Endian_Data((uint8_t *)data, sizeof(uint16_t) * w * h);
-	ST7789_UnSelect();
-}
-
-
-/**
- * @brief Invert Fullscreen color
- * @param invert -> Whether to invert
- * @return none
- */
-void ST7789_InvertColors(uint8_t invert)
-{
-	ST7789_Select();
-	ST7789_WriteCommand(invert ? 0x21 /* INVON */ : 0x20 /* INVOFF */);
 	ST7789_UnSelect();
 }
 
@@ -562,180 +385,6 @@ void ST7789_WriteString(uint16_t x, uint16_t y, const char *str, FontDef font, u
 }
 
 /** 
- * @brief Draw a filled Rectangle with single color
- * @param  x&y -> coordinates of the starting point
- * @param w&h -> width & height of the Rectangle
- * @param color -> color of the Rectangle
- * @return  none
- */
-void ST7789_DrawFilledRectangle(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t color)
-{
-	ST7789_Select();
-	uint8_t i;
-
-	/* Check input parameters */
-	if (x >= ST7789_WIDTH ||
-		y >= ST7789_HEIGHT) {
-		/* Return error */
-		return;
-	}
-
-	/* Check width and height */
-	if ((x + w) >= ST7789_WIDTH) {
-		w = ST7789_WIDTH - x;
-	}
-	if ((y + h) >= ST7789_HEIGHT) {
-		h = ST7789_HEIGHT - y;
-	}
-
-	/* Draw lines */
-	for (i = 0; i <= h; i++) {
-		/* Draw lines */
-		ST7789_DrawLine(x, y + i, x + w, y + i, color);
-	}
-	ST7789_UnSelect();
-}
-
-/** 
- * @brief Draw a Triangle with single color
- * @param  xi&yi -> 3 coordinates of 3 top points.
- * @param color ->color of the lines
- * @return  none
- */
-void ST7789_DrawTriangle(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t x3, uint16_t y3, uint16_t color)
-{
-	ST7789_Select();
-	/* Draw lines */
-	ST7789_DrawLine(x1, y1, x2, y2, color);
-	ST7789_DrawLine(x2, y2, x3, y3, color);
-	ST7789_DrawLine(x3, y3, x1, y1, color);
-	ST7789_UnSelect();
-}
-
-/** 
- * @brief Draw a filled Triangle with single color
- * @param  xi&yi -> 3 coordinates of 3 top points.
- * @param color ->color of the triangle
- * @return  none
- */
-void ST7789_DrawFilledTriangle(uint16_t x1, uint16_t y1, uint16_t x2, uint16_t y2, uint16_t x3, uint16_t y3, uint16_t color)
-{
-	ST7789_Select();
-	int16_t deltax = 0, deltay = 0, x = 0, y = 0, xinc1 = 0, xinc2 = 0,
-			yinc1 = 0, yinc2 = 0, den = 0, num = 0, numadd = 0, numpixels = 0,
-			curpixel = 0;
-
-	deltax = ABS(x2 - x1);
-	deltay = ABS(y2 - y1);
-	x = x1;
-	y = y1;
-
-	if (x2 >= x1) {
-		xinc1 = 1;
-		xinc2 = 1;
-	}
-	else {
-		xinc1 = -1;
-		xinc2 = -1;
-	}
-
-	if (y2 >= y1) {
-		yinc1 = 1;
-		yinc2 = 1;
-	}
-	else {
-		yinc1 = -1;
-		yinc2 = -1;
-	}
-
-	if (deltax >= deltay) {
-		xinc1 = 0;
-		yinc2 = 0;
-		den = deltax;
-		num = deltax / 2;
-		numadd = deltay;
-		numpixels = deltax;
-	}
-	else {
-		xinc2 = 0;
-		yinc1 = 0;
-		den = deltay;
-		num = deltay / 2;
-		numadd = deltax;
-		numpixels = deltay;
-	}
-
-	for (curpixel = 0; curpixel <= numpixels; curpixel++) {
-		ST7789_DrawLine(x, y, x3, y3, color);
-
-		num += numadd;
-		if (num >= den) {
-			num -= den;
-			x += xinc1;
-			y += yinc1;
-		}
-		x += xinc2;
-		y += yinc2;
-	}
-	ST7789_UnSelect();
-}
-
-/** 
- * @brief Draw a Filled circle with single color
- * @param x0&y0 -> coordinate of circle center
- * @param r -> radius of circle
- * @param color -> color of circle
- * @return  none
- */
-void ST7789_DrawFilledCircle(int16_t x0, int16_t y0, int16_t r, uint16_t color)
-{
-	ST7789_Select();
-	int16_t f = 1 - r;
-	int16_t ddF_x = 1;
-	int16_t ddF_y = -2 * r;
-	int16_t x = 0;
-	int16_t y = r;
-
-	ST7789_DrawPixel(x0, y0 + r, color);
-	ST7789_DrawPixel(x0, y0 - r, color);
-	ST7789_DrawPixel(x0 + r, y0, color);
-	ST7789_DrawPixel(x0 - r, y0, color);
-	ST7789_DrawLine(x0 - r, y0, x0 + r, y0, color);
-
-	while (x < y) {
-		if (f >= 0) {
-			y--;
-			ddF_y += 2;
-			f += ddF_y;
-		}
-		x++;
-		ddF_x += 2;
-		f += ddF_x;
-
-		ST7789_DrawLine(x0 - x, y0 + y, x0 + x, y0 + y, color);
-		ST7789_DrawLine(x0 + x, y0 - y, x0 - x, y0 - y, color);
-
-		ST7789_DrawLine(x0 + y, y0 + x, x0 - y, y0 + x, color);
-		ST7789_DrawLine(x0 + y, y0 - x, x0 - y, y0 - x, color);
-	}
-	ST7789_UnSelect();
-}
-
-
-/**
- * @brief Open/Close tearing effect line
- * @param tear -> Whether to tear
- * @return none
- */
-void ST7789_TearEffect(uint8_t tear)
-{
-	ST7789_Select();
-	ST7789_WriteCommand(tear ? 0x35 /* TEON */ : 0x34 /* TEOFF */);
-	ST7789_UnSelect();
-}
-
-
-/** 
  * @brief A Simple test function for ST7789
  * @param  none
  * @return  none
@@ -777,37 +426,6 @@ void ST7789_Test(void)
 	ST7789_WriteString(10, 100, "Hello Steve!", Font_16x26, MAGENTA, WHITE);
 	HAL_Delay(1000);
 
-	ST7789_Fill_Color(RED);
-	ST7789_WriteString(10, 10, "Rect./Line.", Font_11x18, YELLOW, BLACK);
-	ST7789_DrawRectangle(30, 30, 100, 100, WHITE);
-	HAL_Delay(1000);
-
-	ST7789_Fill_Color(RED);
-	ST7789_WriteString(10, 10, "Filled Rect.", Font_11x18, YELLOW, BLACK);
-	ST7789_DrawFilledRectangle(30, 30, 50, 50, WHITE);
-	HAL_Delay(1000);
-
-	ST7789_Fill_Color(RED);
-	ST7789_WriteString(10, 10, "Circle.", Font_11x18, YELLOW, BLACK);
-	ST7789_DrawCircle(60, 60, 25, WHITE);
-	HAL_Delay(1000);
-
-	ST7789_Fill_Color(RED);
-	ST7789_WriteString(10, 10, "Filled Cir.", Font_11x18, YELLOW, BLACK);
-	ST7789_DrawFilledCircle(60, 60, 25, WHITE);
-	HAL_Delay(1000);
-
-	ST7789_Fill_Color(RED);
-	ST7789_WriteString(10, 10, "Triangle", Font_11x18, YELLOW, BLACK);
-	ST7789_DrawTriangle(30, 30, 30, 70, 60, 40, WHITE);
-	HAL_Delay(1000);
-
-	ST7789_Fill_Color(RED);
-	ST7789_WriteString(10, 10, "Filled Tri", Font_11x18, YELLOW, BLACK);
-	ST7789_DrawFilledTriangle(30, 30, 30, 70, 60, 40, WHITE);
-	HAL_Delay(1000);
-
-	//	If FLASH cannot storage anymore datas, please delete codes below.
 	ST7789_Fill_Color(WHITE);
 	ST7789_DrawImage(0, 0, 128, 128, (uint16_t *)saber);
 	HAL_Delay(3000);
