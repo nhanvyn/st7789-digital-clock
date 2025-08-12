@@ -72,6 +72,7 @@ static uint8_t month_from_str(const char *m);
 static const char* month_to_str(uint8_t month);
 static const char* weekday_to_str(uint8_t weekday);
 static uint8_t weekday_from_ymd(int year, int month, int day) ;
+static const char* get_AM_or_PM(uint8_t hours);
 
 /* USER CODE END PFP */
 
@@ -159,10 +160,11 @@ int main(void)
 				// Format time and date
 				snprintf(timeBF,
 						sizeof(timeBF),
-						"%02u:%02u:%02u AM",
+						"%02u:%02u:%02u %s",
 						t.Hours,
 						t.Minutes,
-						t.Seconds);
+						t.Seconds,
+						get_AM_or_PM(t.Hours));
 
 				snprintf(dateBF,
 						sizeof(dateBF),
@@ -466,6 +468,10 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+static const char* get_AM_or_PM(uint8_t hours) {
+    return (hours < 12) ? "AM" : "PM";
+}
+
 static uint8_t weekday_from_ymd(int year, int month, int day) {
     static const uint8_t t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
     if (month < 3) year -= 1;
