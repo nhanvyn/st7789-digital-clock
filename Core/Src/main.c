@@ -120,7 +120,8 @@ int main(void)
   Calib_Data_Read(&hi2c1);
   ST7789_Init();
   HAL_Delay(500);
-  const uint16_t* animation[] = { frame3, frame6 };
+  const uint16_t* animation[] = { frame3, frame6, frame9 };
+  size_t framecount = sizeof(animation) / sizeof(animation[0]);
 
 //  ST7789_Draw_Big_Endian_Image(0, 0, 240, 240, frame3);
 //  HAL_Delay(1000);
@@ -142,7 +143,7 @@ int main(void)
 
   while (1)
   {
-	  for (uint8_t i = 0; i < 2; i++)
+	  for (uint8_t i = 0; i < framecount; i++)
 	  	 {
 			 rawTemp = BME280_ReadTemp(&hi2c1);
 			 celcius_x100 = BME280_compensate_T_int32(rawTemp);
@@ -361,7 +362,7 @@ static void MX_SPI2_Init(void)
   hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
-  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_8;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
