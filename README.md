@@ -1,4 +1,4 @@
-# ST7789 Digital Clock ⏰🌦
+# ST7789 Digital Clock 📟🌦
 
 
 <img src="docs/lcd.jpg" alt="Preview" width="390"/>
@@ -22,3 +22,12 @@ After watching this I attempted to build my own on STM32 with a few twists, such
 - Logic analyzer (to debug SPI data)
 
 ---
+## 📄 Third-Party Acknowledgements
+
+- **ST7789 Display Driver**  
+  Source: [Floyd-Fish](https://github.com/Floyd-Fish/ST7789-STM32)  
+  License: GNU General Public License v3.0  
+  Notes: Used to control the ST7789 240x240 LCD over SPI.
+
+- **Animation asset**  
+  Source: [Camille Unknown](https://www.artstation.com/artwork/q9ygxz)
