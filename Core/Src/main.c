@@ -27,6 +27,7 @@
 #include "frame_mod.h"
 #include "frames.h"
 #include "bme280.h"
+#include "time_convert.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -68,11 +69,7 @@ static void MX_RTC_Init(void);
 static void MX_I2C1_Init(void);
 /* USER CODE BEGIN PFP */
 static void RTC_SetToBuildTime(void);
-static uint8_t month_from_str(const char *m);
-static const char* month_to_str(uint8_t month);
-static const char* weekday_to_str(uint8_t weekday);
-static uint8_t weekday_from_ymd(int year, int month, int day) ;
-static const char* get_AM_or_PM(uint8_t hours);
+
 
 /* USER CODE END PFP */
 
@@ -468,47 +465,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-static const char* get_AM_or_PM(uint8_t hours) {
-    return (hours < 12) ? "AM" : "PM";
-}
 
-static uint8_t weekday_from_ymd(int year, int month, int day) {
-    static const uint8_t t[] = {0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4};
-    if (month < 3) year -= 1;
-    uint8_t w = (year + year/4 - year/100 + year/400 + t[month-1] + day) % 7;
-    return (w == 0) ? 7 : w; // 1=Mon, 7=Sun (STM32 HAL convention)
-}
-
-static const char* weekday_to_str(uint8_t weekday) {
-    // 1 = Monday, 7 = Sunday
-    static const char *names[] = {
-        "???", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"
-    };
-    if (weekday >= 1 && weekday <= 7) {
-        return names[weekday];
-    }
-    return "???";
-}
-
-static const char* month_to_str(uint8_t month) {
-    // month: 1 = Jan, 12 = Dec
-    static const char *names = "JanFebMarAprMayJunJulAugSepOctNovDec";
-    if (month >= 1 && month <= 12) {
-        return names + (month - 1) * 3;
-    }
-    return "???";
-}
-
-static uint8_t month_from_str(const char *date) {
-	// date points to "__DATE__", e.g. "Aug  8 2025"
-    static const char *names = "JanFebMarAprMayJunJulAugSepOctNovDec";
-    for (uint8_t i = 0; i < 12; i++){
-    	if (strncmp(date, names + 3*i, 3) == 0){
-    		return i+1;
-    	}
-    }
-    return 1;
-}
 
 static void RTC_SetToBuildTime(void) {
     RTC_TimeTypeDef t = {0};

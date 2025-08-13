@@ -35,8 +35,8 @@ static void ST7789_Write_Big_Endian_Data(uint8_t *buff, size_t buff_size)
 {
 	ST7789_Select();
 	ST7789_DC_Set();
-	// reverse each 2 bytes to match big endian format
 
+	// reverse each 2 bytes to match big endian format
 	for (uint16_t i = 0; i < ST7789_WIDTH * ST7789_HEIGHT; i++) {
 	    uint8_t temp = buff[i * 2];
 	    buff[i * 2] = buff[i * 2 + 1];
@@ -44,7 +44,6 @@ static void ST7789_Write_Big_Endian_Data(uint8_t *buff, size_t buff_size)
 	}
 
 	// split data in small chunks because HAL can't send more than 64K at once
-
 	while (buff_size > 0) {
 		uint16_t chunk_size = buff_size > 65535 ? 65535 : buff_size;
 		#ifdef USE_DMA

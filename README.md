@@ -21,7 +21,6 @@ After watching this I attempted to build my own on STM32 with a few twists, such
 - BME280 temperature & humidity sensor
 - Logic analyzer (to debug SPI data)
 
----
 ## 📄 Third-Party Acknowledgements
 
 - **ST7789 Display Driver**  
